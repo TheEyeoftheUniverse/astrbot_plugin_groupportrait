@@ -1,0 +1,5 @@
+name: astrbot_plugin_groupportrait
+desc: 群像——玩家发图绑定立绘后,管理员一条 /群像 把最近群聊画成多人插画(LLM 构图 + RunningHub 工作流生图)
+version: v1.0.0
+author: TheEyeoftheUniverse
+repo: https://github.com/TheEyeoftheUniverse/astrbot_plugin_groupportrait

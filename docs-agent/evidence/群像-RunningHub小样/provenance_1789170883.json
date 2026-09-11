@@ -1,0 +1,21 @@
+{
+  "time": "2026-09-12 07:54:43",
+  "purpose": "验收④:RunningHub 真跑 1 张小样",
+  "key_source": "key_file /Users/hs/.hermes/scripts/runninghub_krea2.json",
+  "webappId": "2095419953062121474",
+  "base_url": "https://www.runninghub.ai",
+  "taskId": "2098560697573396482",
+  "prompt": "以参考图中的角色为主角,画一幅群像插画:几个朋友深夜在霓虹灯下的网吧里开黑,屏幕光打在脸上,插画风格,画面无文字",
+  "negative": "文字, 水印, 签名, logo, 低质量",
+  "ref_image": "/Users/hs/project/astrbot_plugin_groupportrait/docs-agent/evidence/群像-RunningHub小样/test_ref_1789170833.png",
+  "ratio": "16:9 (Widescreen)",
+  "megapixels": "1",
+  "elapsed_s": 50,
+  "outputs": [
+    {
+      "path": "/Users/hs/project/astrbot_plugin_groupportrait/docs-agent/evidence/群像-RunningHub小样/小样_eba050ab.png",
+      "sha256": "02aeb2074d62b5ad7ca51a1e2e6a3027b1a82385b5b4f7892feb7a5af9b923e7",
+      "bytes": 1241079
+    }
+  ]
+}

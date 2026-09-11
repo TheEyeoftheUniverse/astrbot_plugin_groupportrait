@@ -1,0 +1,140 @@
+{
+  "rh_api_key": {
+    "description": "RunningHub API Key",
+    "type": "string",
+    "default": "",
+    "hint": "留空则依次回退:env RUNNINGHUB_API_KEY → key_file(默认复用 ~/.hermes/scripts/runninghub_krea2.json);key 不落本配置明文也可跑"
+  },
+  "rh_key_file": {
+    "description": "API Key 兜底文件路径",
+    "type": "string",
+    "default": "~/.hermes/scripts/runninghub_krea2.json",
+    "hint": "JSON 里含 apiKey 字段即认"
+  },
+  "rh_base_url": {
+    "description": "RunningHub OpenAPI base URL",
+    "type": "string",
+    "default": "https://www.runninghub.ai"
+  },
+  "rh_webapp_id": {
+    "description": "RunningHub 工作流 webappId(占位工作流,D8)",
+    "type": "string",
+    "default": "2095419953062121474",
+    "hint": "默认接 Krea2 多图参考编辑工作流(节点 19 提示词/36 负面/2,34,35 参考图);正式工作流建好后只改此处与节点映射"
+  },
+  "rh_instance": {
+    "description": "运行档位",
+    "type": "string",
+    "default": "standard"
+  },
+  "rh_poll_interval": {
+    "description": "任务轮询间隔(秒)",
+    "type": "int",
+    "default": 5
+  },
+  "rh_timeout": {
+    "description": "生图任务超时(秒)",
+    "type": "int",
+    "default": 300
+  },
+  "node_prompt": {
+    "description": "提示词节点 nodeId",
+    "type": "string",
+    "default": "19"
+  },
+  "node_prompt_field": {
+    "description": "提示词节点字段名",
+    "type": "string",
+    "default": "value"
+  },
+  "node_negative": {
+    "description": "负面提示词节点 nodeId",
+    "type": "string",
+    "default": "36"
+  },
+  "node_negative_field": {
+    "description": "负面提示词节点字段名",
+    "type": "string",
+    "default": "value"
+  },
+  "node_refs": {
+    "description": "参考图节点 nodeId 列表(逗号分隔)",
+    "type": "string",
+    "default": "2,34,35",
+    "hint": "入画人数上限实际取 min(max_characters, 本列表长度)"
+  },
+  "node_ref_field": {
+    "description": "参考图节点字段名",
+    "type": "string",
+    "default": "image"
+  },
+  "node_seed": {
+    "description": "种子节点 nodeId",
+    "type": "string",
+    "default": "10"
+  },
+  "node_seed_field": {
+    "description": "种子节点字段名",
+    "type": "string",
+    "default": "noise_seed"
+  },
+  "node_aspect": {
+    "description": "比例/分辨率节点 nodeId",
+    "type": "string",
+    "default": "40"
+  },
+  "aspect_ratio": {
+    "description": "成图比例(D9 默认横幅)",
+    "type": "string",
+    "default": "16:9 (Widescreen)",
+    "hint": "须为工作流 ResolutionSelector 枚举值:1:1 (Square) / 3:4 (Portrait Standard) / 4:3 (Standard) / 9:16 (Portrait Widescreen) / 16:9 (Widescreen) / 21:9 (Ultrawide) 等"
+  },
+  "megapixels": {
+    "description": "百万像素档(ResolutionSelector)",
+    "type": "string",
+    "default": "1"
+  },
+  "max_characters": {
+    "description": "入画人数上限(D9)",
+    "type": "int",
+    "default": 4
+  },
+  "context_n": {
+    "description": "取最近群聊消息条数 N",
+    "type": "int",
+    "default": 50
+  },
+  "llm_temperature": {
+    "description": "构图 LLM 温度",
+    "type": "float",
+    "default": 0.7
+  },
+  "compose_template": {
+    "description": "构图系统提示词模板路径",
+    "type": "string",
+    "default": "",
+    "hint": "留空用内置 templates/compose_system_prompt.md(双端共享资产)"
+  },
+  "max_image_mb": {
+    "description": "立绘图片大小上限(MB)",
+    "type": "int",
+    "default": 10
+  },
+  "bind_image_ttl_min": {
+    "description": "『先发图再发指令』回溯窗口(分钟)",
+    "type": "int",
+    "default": 10
+  },
+  "cooldown_min": {
+    "description": "/群像 冷却(分钟,0=关)",
+    "type": "int",
+    "default": 0,
+    "hint": "D6 预留:仅管理员触发已是成本护栏"
+  },
+  "group_whitelist": {
+    "description": "群白名单(逗号分隔群号,空=不限制)",
+    "type": "string",
+    "default": "",
+    "hint": "D6 预留"
+  }
+}
