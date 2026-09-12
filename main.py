@@ -1,13 +1,14 @@
 """群像——AstrBot 群聊立绘插画插件。
 
 玩家发图 + /立绘绑定 把自定形象绑定到 QQ 号;管理员 /群像 触发:
-读最近群聊 → LLM 构图(选场景/选人/挑参考图) → RunningHub 工作流生图 → 回发群里。
+读最近群聊 → LLM 构图(选场景/选人/挑参考图) → 按通道生图(A=RunningHub 工作流 / B=直连生图 API) → 回发群里。
 本文件只做 AstrBot 适配(命令面/消息组件/发送),核心逻辑在 core/(可独立单测)。
 
 第二阶段 SillyTavern 扩展移植(TODO,本期不实施):
 见 docs-agent/待落地需求/群像AstrBot插件_20260910.md「第二阶段」与
 templates/compose_system_prompt.md 尾部备注。
 """
+import asyncio
 import json
 import os
 import time
@@ -20,6 +21,7 @@ from astrbot.api.star import Context, Star, register
 
 from .core.binding_store import BindingError, BindingStore
 from .core.context_collector import ContextCollector
+from .core.direct_api import DirectImageClient
 from .core.pipeline import GroupPortraitPipeline, PipelineError
 from .core.runninghub import RunningHubClient
 
@@ -174,6 +176,44 @@ class GroupPortraitPlugin(Star):
             timeout_s=float(self._cfg("rh_timeout", 300)),
         )
 
+    def _resolve_direct_key(self):
+        """B 通道 key 链:配置项 → env DIRECT_IMAGE_API_KEY → OPENAI_API_KEY。"""
+        for key in (str(self._cfg("direct_api_key", "") or "").strip(),
+                    os.environ.get("DIRECT_IMAGE_API_KEY", "").strip(),
+                    os.environ.get("OPENAI_API_KEY", "").strip()):
+            if key:
+                return key
+        return ""
+
+    def _overrides_path(self):
+        return os.path.join(self.data_dir, "channel_overrides.json")
+
+    def _read_model_override(self):
+        try:
+            with open(self._overrides_path(), "r", encoding="utf-8") as f:
+                return str(json.load(f).get("direct_model") or "").strip()
+        except (OSError, ValueError):
+            return ""
+
+    def _write_model_override(self, model):
+        with open(self._overrides_path(), "w", encoding="utf-8") as f:
+            json.dump({"direct_model": model}, f, ensure_ascii=False)
+
+    def _build_imager(self):
+        """生图通道分发:A=RunningHub 工作流(默认,老用户零改动) / B=直连 OpenAI 形状生图 API。"""
+        channel = str(self._cfg("channel", "runninghub") or "runninghub").strip().lower()
+        if channel == "direct":
+            return DirectImageClient(
+                base_url=str(self._cfg("direct_base_url", "")).strip(),
+                api_key=self._resolve_direct_key(),
+                model=self._read_model_override() or str(self._cfg("direct_model", "")).strip(),
+                timeout_s=float(self._cfg("direct_timeout", 300)),
+                size=str(self._cfg("direct_size", "") or "").strip(),
+                merge_negative=bool(self._cfg("direct_merge_negative", False)),
+                max_refs=int(self._cfg("direct_max_refs", 4)),
+            )
+        return self._build_rh()
+
     def _get_provider(self):
         try:
             return self.context.get_using_provider()
@@ -229,7 +269,7 @@ class GroupPortraitPlugin(Star):
         yield event.plain_result(f"收到,正在画最近 {n} 条群聊的群像…(已绑定立绘:{names})")
         self._last_run[gid] = time.time()
         self.pipeline.llm = self._get_provider()
-        self.pipeline.rh = self._build_rh()
+        self.pipeline.rh = self._build_imager()
         try:
             result = await self.pipeline.run(gid, bot=getattr(event, "bot", None))
         except PipelineError as e:
@@ -241,6 +281,73 @@ class GroupPortraitPlugin(Star):
             return
         yield event.chain_result([Comp.Image.fromFileSystem(result["image_path"]),
                                   Comp.Plain("\n" + result["caption"])])
+
+    # ---------- 生图通道管理(仅管理员:查看状态 / B 通道选模型) ----------
+
+    @filter.command("生图通道")
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    async def image_channel_status(self, event: AstrMessageEvent):
+        channel = str(self._cfg("channel", "runninghub") or "runninghub").strip().lower()
+        if channel != "direct":
+            key = self._resolve_api_key()
+            yield event.plain_result(
+                "当前生图通道:A RunningHub 工作流(默认)\n"
+                f"webappId:{self._cfg('rh_webapp_id', '')}\n"
+                f"api_key:{'已配置(…' + key[-4:] + ')' if key else '未配置'}\n"
+                "切 B 直连API:配置 channel=direct + direct_base_url/direct_api_key,再 /生图模型 选模型")
+            return
+        override = self._read_model_override()
+        model = override or str(self._cfg("direct_model", "")).strip() or "(未选)"
+        key = self._resolve_direct_key()
+        yield event.plain_result(
+            "当前生图通道:B 直连API(OpenAI images 形状)\n"
+            f"base_url:{str(self._cfg('direct_base_url', '')).strip() or '(未配)'}\n"
+            f"model:{model}" + ("(命令选择,覆盖配置)" if override else "") + "\n"
+            f"api_key:{'已配置(…' + key[-4:] + ')' if key else '未配置'}")
+
+    @filter.command("生图模型")
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    async def image_channel_models(self, event: AstrMessageEvent):
+        """B 通道:GET {base}/models 拉模型列表;带参数(序号或模型名)则选中并持久化。"""
+        if str(self._cfg("channel", "runninghub") or "runninghub").strip().lower() != "direct":
+            yield event.plain_result("当前为 A RunningHub 工作流,模型由工作流固定;切 channel=direct 后本指令可用")
+            return
+        try:
+            imager = self._build_imager()
+        except Exception as e:
+            yield event.plain_result(f"直连通道装配失败:{e}")
+            return
+        arg = (event.get_message_str() or "").strip()
+        for token in ("/生图模型", "生图模型"):
+            if arg.startswith(token):
+                arg = arg[len(token):].strip()
+        try:
+            models = await asyncio.to_thread(imager.list_models)
+        except Exception as e:
+            yield event.plain_result(f"拉模型列表失败:{e}")
+            return
+        if not models:
+            yield event.plain_result("模型列表为空(服务端 /models 无内容)")
+            return
+        if not arg:
+            shown = "\n".join(f"{i}. {m}" for i, m in enumerate(models[:30], 1))
+            more = f"\n…共 {len(models)} 个,仅列前 30" if len(models) > 30 else ""
+            yield event.plain_result(f"可选模型:\n{shown}{more}\n\n用 /生图模型 <序号或模型名> 选中(持久化)")
+            return
+        pick = None
+        if arg.isdigit() and 1 <= int(arg) <= len(models):
+            pick = models[int(arg) - 1]
+        else:
+            pick = next((m for m in models if m == arg), None)
+            if pick is None:  # 宽容:唯一包含匹配
+                hits = [m for m in models if arg.lower() in m.lower()]
+                if len(hits) == 1:
+                    pick = hits[0]
+        if pick is None:
+            yield event.plain_result(f"没找到模型「{arg}」,先发 /生图模型 看列表(名称需精确或唯一包含)")
+            return
+        self._write_model_override(pick)
+        yield event.plain_result(f"已选 B 通道生图模型:{pick}(持久化,立即生效)")
 
     # ---------- 立绘绑定族(D5:群内自助 + 管理员代管) ----------
 

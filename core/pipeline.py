@@ -1,4 +1,4 @@
-"""群像流水线:上下文 → LLM 构图 → 参考图解析 → RunningHub 生图 → 成图落盘。
+"""群像流水线:上下文 → LLM 构图 → 参考图解析 → 按通道生图 → 成图落盘。
 
 /群像 一条命令背后的完整链路;llm/rh 均为注入依赖(鸭子接口),dry-run 时可整体 mock。
 同一群同时只允许一幅在画(生成中重复触发直接拒绝,正本 §5)。
@@ -66,7 +66,7 @@ class GroupPortraitPipeline:
         if self.llm is None:
             raise PipelineError("宿主未接 LLM provider,构图大脑不可用")
         if self.rh is None:
-            raise PipelineError("RunningHub 未配置(api_key / webapp_id)")
+            raise PipelineError("生图通道未配置(检查 channel 与对应通道的 api_key 等装配项)")
         # 1. 上下文
         messages, src = await self.collector.fetch_recent(g, self.context_n, bot)
         if not messages:
@@ -109,7 +109,7 @@ class GroupPortraitPipeline:
                 self.rh.generate_images, composition["scene"], composition["negative"],
                 ref_paths, self.out_dir, self.seed, self.ratio, self.megapixels)
         except Exception as e:
-            raise PipelineError(f"RunningHub 生图失败:{e}") from e
+            raise PipelineError(f"{getattr(self.rh, 'channel_name', 'RunningHub')} 生图失败:{e}") from e
         # 6. 回执内容
         bits = []
         if composition.get("note"):

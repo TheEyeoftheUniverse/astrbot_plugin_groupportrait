@@ -9,7 +9,7 @@ import traceback
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import helpers  # noqa: F401  先导入以注入 stub 路径
 
-MODULES = ["test_binding", "test_composer", "test_runninghub_nodes",
+MODULES = ["test_binding", "test_composer", "test_runninghub_nodes", "test_direct_api",
            "test_pipeline_dryrun", "test_bind_flow", "test_plugin_smoke"]
 
 

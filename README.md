@@ -1,6 +1,6 @@
 # 群像 astrbot_plugin_groupportrait
 
-玩家把立绘发到群里绑定 QQ 号,管理员一条 `/群像`:插件读取最近群聊 → LLM 构图(选场景/选出场角色/自动挑绑定玩家的立绘作参考图) → RunningHub 工作流生图 → 回发群里。
+玩家把立绘发到群里绑定 QQ 号,管理员一条 `/群像`:插件读取最近群聊 → LLM 构图(选场景/选出场角色/自动挑绑定玩家的立绘作参考图) → 按配置通道生图(A=RunningHub 工作流 / B=直连生图 API) → 回发群里。
 
 需求正本:`docs-agent/待落地需求/群像AstrBot插件_20260910.md`(11 决策共识案)。
 
@@ -15,6 +15,8 @@
 | `/立绘代绑 @某人` | 管理员 | 带图/回复图为他人绑定 |
 | `/立绘清绑 @某人` | 管理员 | 移除他人绑定 |
 | `/群像` | 管理员 | 触发全链路:上下文 → 构图 → 生图 → 发群;生成中重复触发直接拒绝 |
+| `/生图通道` | 管理员 | 查看当前生图通道与 key/model 装配状态 |
+| `/生图模型 [序号或名称]` | 管理员 | B 通道:拉取服务端 `/models` 模型列表;带参数则选中并持久化 |
 
 ## 安装（AstrBot ≥ v4.28 实测）
 
@@ -38,6 +40,15 @@ metadata.yaml 在仓库根目录（name/desc/version/author/repo 五字段），
 3. 兜底文件 `rh_key_file`(默认 `~/.hermes/scripts/runninghub_krea2.json`,复用现成 hermes 基建)
 
 占位工作流(D8):默认接 Krea2 多图参考编辑工作流(webappId `2095419953062121474`,节点 19 提示词 / 36 负面 / 2,34,35 参考图 / 10 种子 / 40 比例),全部节点映射做成配置;正式工作流建好后只改配置不改代码。入画人数 = min(`max_characters`(D9 默认 4), 参考图节点数)。
+
+### 生图通道(A | B 二选一,`channel` 配置,默认 A)
+
+- **A `runninghub`(默认)**:RunningHub 工作流,仅开源模型;全部 `rh_*` / `node_*` 配置照旧,老用户零改动。
+- **B `direct`**:直连 URL 生图 API,尽量兼容 OpenAI images API 形状——有参考图走 `POST {base}/images/edits`(图生图,multipart,单图字段 `image`、多图 `image[]`),无参考图走 `POST {base}/images/generations`(JSON);key 以 `Authorization: Bearer` 携带。配置 `channel=direct` + `direct_base_url`(如 `https://api.xxx.com/v1`)+ `direct_api_key`(回退 env `DIRECT_IMAGE_API_KEY` → `OPENAI_API_KEY`)。
+
+B 通道模型选择:管理员 `/生图模型` 在线拉 `GET {base}/models` 列表呈现,再 `/生图模型 <序号或名称>` 选中(持久化到插件数据目录 `channel_overrides.json`,覆盖 `direct_model` 配置)。响应兼容 `url` 与 `b64_json` 两种返回。LLM 构图/选参考图逻辑两通道完全复用,仅生图执行段分发。
+
+B 通道差异项:`direct_size` 默认 `1536x1024`(横幅,对齐 A 通道 16:9);OpenAI 形状无 negative/seed 参数,`direct_merge_negative=true` 时构图负面词以 `Negative prompt:` 并入提示词,`seed` 忽略;入画人数 = min(`max_characters`, `direct_max_refs`(默认 4))。
 
 ## 开发
 

@@ -1,4 +1,11 @@
 {
+  "channel": {
+    "description": "生图通道(A=RunningHub 工作流 / B=直连生图API)",
+    "type": "string",
+    "options": ["runninghub", "direct"],
+    "default": "runninghub",
+    "hint": "A=现 RunningHub 工作流(仅开源模型,老用户保持不动);B=直连 URL 生图 API(OpenAI images 形状,可用闭源模型),配 direct_base_url/direct_api_key 后用 /生图模型 拉列表选择"
+  },
   "rh_api_key": {
     "description": "RunningHub API Key",
     "type": "string",
@@ -34,6 +41,47 @@
   },
   "rh_timeout": {
     "description": "生图任务超时(秒)",
+    "type": "int",
+    "default": 300
+  },
+  "direct_base_url": {
+    "description": "B通道 base URL(OpenAI 兼容根)",
+    "type": "string",
+    "default": "",
+    "hint": "如 https://api.xxx.com/v1;请求发 {base}/images/generations、{base}/images/edits、{base}/models"
+  },
+  "direct_api_key": {
+    "description": "B通道 API Key",
+    "type": "string",
+    "default": "",
+    "hint": "留空则依次回退:env DIRECT_IMAGE_API_KEY → OPENAI_API_KEY;Bearer 方式携带"
+  },
+  "direct_model": {
+    "description": "B通道生图模型",
+    "type": "string",
+    "default": "",
+    "hint": "可用管理员指令 /生图模型 在线拉列表选择(选择持久化并覆盖此项);留空则在生图时报错提示"
+  },
+  "direct_size": {
+    "description": "B通道成图尺寸",
+    "type": "string",
+    "default": "1536x1024",
+    "hint": "默认横幅对齐 A 通道 16:9;留空=服务商默认;须为该模型支持的枚举(常见 1024x1024 / 1536x1024 / 1024x1536)"
+  },
+  "direct_max_refs": {
+    "description": "B通道参考图上限(图生图)",
+    "type": "int",
+    "default": 4,
+    "hint": "入画人数 = min(max_characters, 本值);按所选模型多图能力调整"
+  },
+  "direct_merge_negative": {
+    "description": "B通道负面词并入提示词",
+    "type": "bool",
+    "default": false,
+    "hint": "OpenAI images 形状无 negative 参数;开启后构图负面词以 'Negative prompt:' 追加到提示词尾部"
+  },
+  "direct_timeout": {
+    "description": "B通道生图超时(秒)",
     "type": "int",
     "default": 300
   },
