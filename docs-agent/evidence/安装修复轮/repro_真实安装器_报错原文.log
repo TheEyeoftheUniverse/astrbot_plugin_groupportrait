@@ -1,0 +1,15 @@
+============================================================
+[1] 目标仓库(私有) 匿名 GitHub 导入预检:
+[32m[21:00:54.322][0m [Core] [1m[INFO][0m [httpx._client:1740]: [1mHTTP Request: GET https://api.github.com/repos/TheEyeoftheUniverse/astrbot_plugin_groupportrait "HTTP/1.1 403 rate limit exceeded"[0m
+[32m[21:00:54.323][0m [Core] [1m[INFO][0m [core.zip_updater:132]: [1mCould not get the default github branch for TheEyeoftheUniverse/astrbot_plugin_groupportrait; trying main.[0m
+[32m[21:00:54.945][0m [Core] [1m[INFO][0m [httpx._client:1740]: [1mHTTP Request: GET https://raw.githubusercontent.com/TheEyeoftheUniverse/astrbot_plugin_groupportrait/main/metadata.yaml "HTTP/1.1 404 Not Found"[0m
+[32m[21:00:55.618][0m [Core] [1m[INFO][0m [httpx._client:1740]: [1mHTTP Request: GET https://raw.githubusercontent.com/TheEyeoftheUniverse/astrbot_plugin_groupportrait/main/metadata.yml "HTTP/1.1 404 Not Found"[0m
+    异常类型: ValueError
+    报错原文: 未在仓库根目录找到 metadata.yaml 或 metadata.yml。
+============================================================
+[2] 对照组(公开插件仓库) 同一安装器:
+[32m[21:00:56.247][0m [Core] [1m[INFO][0m [httpx._client:1740]: [1mHTTP Request: GET https://raw.githubusercontent.com/Soulter/helloworld/master/metadata.yaml "HTTP/1.1 200 OK"[0m
+    成功: name='helloworld' version='v1.3.0'
+============================================================
+[3] 目标仓库 git clone 通道(非 github.com 域名才走 git,此处仅证明匿名 clone 不可行):
+    transport 判定 = 'archive'  (archive=匿名HTTP抓取, git=git clone)

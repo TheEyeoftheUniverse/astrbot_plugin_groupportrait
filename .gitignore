@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 data_runtime/
 .DS_Store
+dist/

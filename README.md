@@ -16,6 +16,19 @@
 | `/立绘清绑 @某人` | 管理员 | 移除他人绑定 |
 | `/群像` | 管理员 | 触发全链路:上下文 → 构图 → 生图 → 发群;生成中重复触发直接拒绝 |
 
+## 安装（AstrBot ≥ v4.28 实测）
+
+metadata.yaml 在仓库根目录（name/desc/version/author/repo 五字段），安装报「未找到 metadata.yaml」时**不是文件缺失**，而是 AstrBot 对 github.com 仓库只走匿名通道（raw 预检 + zip 下载），**私有仓库会整体 404 并误报此错**。两条安装通道任选：
+
+1. **GitHub 导入（要求仓库公开）**：WebUI 插件页 → 从 GitHub 导入 → 填仓库地址。仓库转公开后即可用此通道；仓库内 `docs-agent/` 为内部工作文档，转公开前应先移出 git 跟踪。
+2. **上传安装（私有仓库可用，v4.28 已实测通过）**：
+
+   ```bash
+   python3 scripts/build_plugin_zip.py   # 产出 dist/astrbot_plugin_groupportrait-main.zip（与 GitHub zipball 同布局）
+   ```
+
+   WebUI 插件页 → 上传安装 → 选该 zip。或由维护者把 zip 挂到 release 附件供下载后上传。
+
 ## 配置(key 链与占位工作流)
 
 `_conf_schema.json` 全量面板。RunningHub key 解析顺序(任何一处命中即可,**不要求明文入库**):
